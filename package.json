@@ -1,0 +1,19 @@
+{
+  "name": "github-gantt",
+  "version": "0.0.1",
+  "description": "Gantt chart for Github issues",
+  "main": "index.js",
+  "dependencies": {
+    "dateformat": "^2.0.0",
+    "dhtmlx-gantt": "^4.1.0",
+    "express": "^4.15.2",
+    "octokat": "^0.6.4",
+    "realm": "^1.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adam Fish",
+  "license": "GPL-2.0"
+}
