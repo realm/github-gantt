@@ -5,13 +5,7 @@ const Realm = require('realm');
 const path = require('path');
 const dateFormat = require('dateformat');
 const utilities = require('./utilities');
-
-// Config
-const START_DATE_STRING = "#### 🗓 Start Date:";
-const DUE_DATE_STRING = "#### 🗓 Expected Date:";
-const LABEL_STRING = "#### 💪 Team:";
-const PROGRESS_STRING = "#### 📈 Progress (0-1):"
-const GITHUB_API_TOKEN = (process.env.GITHUB_TOKEN || "<INSERT TOKEN>");
+const config = require('./config/config');
 
 // Realm Model Definition
 const TaskSchema = {
@@ -68,7 +62,7 @@ let realm = new Realm({
 });
 
 const gh = new GitHub({
-  token: GITHUB_API_TOKEN
+  token: config.GITHUB_API_TOKEN
 });
 
 function processIssues(issues, completion, idArray) {
@@ -88,20 +82,20 @@ function processIssues(issues, completion, idArray) {
     if (issue.body != null) {
       var lines = issue.body.split('\r\n')
       for (var j = 0; j < lines.length; j++) {
-        if (!lines[j].indexOf(START_DATE_STRING)) {
-          let date = new Date(lines[j].replace(START_DATE_STRING, ''));
+        if (!lines[j].indexOf(config.START_DATE_STRING)) {
+          let date = new Date(lines[j].replace(config.START_DATE_STRING, ''));
           if (utilities.isDate(date)) {
             startDate = date;
           }
         }
-        if (!lines[j].indexOf(DUE_DATE_STRING)) {
-          let date = new Date(lines[j].replace(DUE_DATE_STRING, ''));
+        if (!lines[j].indexOf(config.DUE_DATE_STRING)) {
+          let date = new Date(lines[j].replace(config.DUE_DATE_STRING, ''));
           if (utilities.isDate(date)) {
             dueDate = date;
           }
         }
-        if (!lines[j].indexOf(LABEL_STRING)) {
-          var labelString = lines[j].replace(LABEL_STRING, '');
+        if (!lines[j].indexOf(config.LABEL_STRING)) {
+          var labelString = lines[j].replace(config.LABEL_STRING, '');
           if (utilities.isString(labelString)) {
             labelString = labelString.trim();
             if (utilities.isArray(issue.labels)) {
@@ -117,8 +111,8 @@ function processIssues(issues, completion, idArray) {
             }
           }
         }
-        if (!lines[j].indexOf(PROGRESS_STRING)) {
-          progress = utilities.sanitizeFloat(lines[j].replace(PROGRESS_STRING, ''));
+        if (!lines[j].indexOf(config.PROGRESS_STRING)) {
+          progress = utilities.sanitizeFloat(lines[j].replace(config.PROGRESS_STRING, ''));
         }
       }
     }
@@ -196,217 +190,8 @@ function getTaskChartData() {
 
 app.use('/static', express.static(path.join(__dirname, 'node_modules/dhtmlx-gantt/codebase')));
 
-realm.objects
-
-let html = `<!DOCTYPE html>
-<head>
-  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
-</head>
-  <script src="/static/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
-  <link rel="stylesheet" href="/static/dhtmlxgantt.css" type="text/css" charset="utf-8">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <style type="text/css">
-    html, body{ height:100%; padding:0px; margin:0px; overflow: hidden;}
-    .weekend{ background: #BD7990!important; color:white !important;}
-    .buttonload {
-      background-color: #4CAF50;
-      border: none;
-      color: white;
-      padding: 12px 24px;
-      font-size: 16px;
-      outline:none;
-    }
-
-    .fa {
-      margin-left: -12px;
-      margin-right: 8px;
-    }
-    </style>
-<body onresize="zoomToFit()";onload="myFunction()">
-  <div style="text-align: right;height: 40px;line-height: 40px;">
-    <button class="buttonload" onclick="refresh(this)" id="refreshButton">
-    Refresh
-    </button>
-  </div>
-  <div id="gantt_here" style='width:100%; height:100%;'></div>
-  <script type="text/javascript">
-    var HttpClient = function() {
-      this.get = function(aUrl, aCallback) {
-        var anHttpRequest = new XMLHttpRequest();
-        anHttpRequest.onreadystatechange = function() { 
-        if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
-          aCallback(anHttpRequest.responseText);
-        }
-
-        anHttpRequest.open( "GET", aUrl, true );            
-        anHttpRequest.send( null );
-      }
-    };
-    var client = new HttpClient();
-    gantt.config.xml_date = "%m-%d-%Y";
-    gantt.config.readonly = true;
-    gantt.config.grid_width = 400;
-    gantt.config.columns =  [
-      {name:"text",
-      label:"Task name",  
-      tree:true, 
-      width:'*' },
-    ];
-    gantt.attachEvent("onTaskClick", function(id, e) {
-      var url = "/getIssueURL?id="+id;
-      client.get(url, function(response) {
-        window.open(response, "_blank");
-      });
-    });
-        
-    gantt.config.scale_unit = "week"; 
-    gantt.config.date_scale = "%F, %d";
-
-    gantt.config.subscales = [
-      {unit:"month", step:1, date:"%M"}
-    ];
-    gantt.config.scale_height = 54;
-
-    gantt.init("gantt_here");
-    gantt.load("/data");
-
-    refresh(document.getElementById("refreshButton"));
-    
-    function refresh(toggle) {
-      toggle.innerHTML = '<i class="fa fa-refresh fa-spin"></i>Working';
-      
-      client.get("/refreshData", function(response) {
-        gantt.clearAll(); 
-        gantt.load("/data");
-        toggle.innerText = "Refresh";
-      });
-    };
-
-    function zoomToFit() {
-      var project = gantt.getSubtaskDates();
-      var areaWidth = gantt.$task.offsetWidth;
-
-      for (var i = 0; i < scaleConfigs.length; i++) {
-        var columnCount = getUnitsBetween(project.start_date, project.end_date, scaleConfigs[i].unit, scaleConfigs[i].step);
-        if ((columnCount + 2) * gantt.config.min_column_width <= areaWidth) {
-          break;
-        }
-      }
-
-      if (i == scaleConfigs.length) {
-        i--;
-      }
-      applyConfig(scaleConfigs[i], project);
-      gantt.render();
-    };
-    
-    // Zoom to fit functionality
-    function applyConfig(config, dates) {
-      gantt.config.scale_unit = config.scale_unit;
-      if (config.date_scale) {
-        gantt.config.date_scale = config.date_scale;
-        gantt.templates.date_scale = null;
-      }
-      else {
-        gantt.templates.date_scale = config.template;
-      }
-
-      gantt.config.step = config.step;
-      gantt.config.subscales = config.subscales;
-
-      if (dates) {
-        gantt.config.start_date = gantt.date.add(dates.start_date, -1, config.unit);
-        gantt.config.end_date = gantt.date.add(gantt.date[config.unit + "_start"](dates.end_date), 2, config.unit);
-      } 
-      else {
-        gantt.config.start_date = gantt.config.end_date = null;
-      }
-    };
-    
-    // get number of columns in timeline
-    function getUnitsBetween(from, to, unit, step) {
-      var start = new Date(from);
-      var end = new Date(to);
-      var units = 0;
-      while (start.valueOf() < end.valueOf()) {
-        units++;
-        start = gantt.date.add(start, step, unit);
-      }
-      return units;
-    };
-    
-    //Setting available scales
-    var scaleConfigs = [
-      // minutes
-      { unit: "minute", step: 1, scale_unit: "hour", date_scale: "%H", subscales: [
-        {unit: "minute", step: 1, date: "%H:%i"}
-      ]
-      },
-      // hours
-      { unit: "hour", step: 1, scale_unit: "day", date_scale: "%j %M",
-        subscales: [
-          {unit: "hour", step: 1, date: "%H:%i"}
-        ]
-      },
-      // days
-      { unit: "day", step: 1, scale_unit: "month", date_scale: "%F",
-        subscales: [
-          {unit: "day", step: 1, date: "%j"}
-        ]
-      },
-      // weeks
-      {unit: "week", step: 1, scale_unit: "month", date_scale: "%F",
-        subscales: [
-          {unit: "week", step: 1, template: function (date) {
-            var dateToStr = gantt.date.date_to_str("%d %M");
-            var endDate = gantt.date.add(gantt.date.add(date, 1, "week"), -1, "day");
-            return dateToStr(date) + " - " + dateToStr(endDate);
-          }}
-        ]},
-      // months
-      { unit: "month", step: 1, scale_unit: "year", date_scale: "%Y",
-        subscales: [
-          {unit: "month", step: 1, date: "%M"}
-        ]},
-      // quarters
-      { unit: "month", step: 3, scale_unit: "year", date_scale: "%Y",
-        subscales: [
-          {unit: "month", step: 3, template: function (date) {
-            var dateToStr = gantt.date.date_to_str("%M");
-            var endDate = gantt.date.add(gantt.date.add(date, 3, "month"), -1, "day");
-            return dateToStr(date) + " - " + dateToStr(endDate);
-          }}
-        ]},
-      // years
-      {unit: "year", step: 1, scale_unit: "year", date_scale: "%Y",
-        subscales: [
-          {unit: "year", step: 5, template: function (date) {
-            var dateToStr = gantt.date.date_to_str("%Y");
-            var endDate = gantt.date.add(gantt.date.add(date, 5, "year"), -1, "day");
-            return dateToStr(date) + " - " + dateToStr(endDate);
-          }}
-        ]},
-      // decades
-      {unit: "year", step: 10, scale_unit: "year", template: function (date) {
-        var dateToStr = gantt.date.date_to_str("%Y");
-        var endDate = gantt.date.add(gantt.date.add(date, 10, "year"), -1, "day");
-        return dateToStr(date) + " - " + dateToStr(endDate);
-      },
-        subscales: [
-          {unit: "year", step: 100, template: function (date) {
-            var dateToStr = gantt.date.date_to_str("%Y");
-            var endDate = gantt.date.add(gantt.date.add(date, 100, "year"), -1, "day");
-            return dateToStr(date) + " - " + dateToStr(endDate);
-          }}
-        ]}
-    ];
-</script>
-</body>`;
-
-app.get('/getIssueURL', function (req, res) {
-  let taskId = parseInt(req.query.id);
-  let task = realm.objectForPrimaryKey('Task', taskId);
-  res.send(task.html_url);
+app.get('/', function (req, res) {
+  res.sendFile(path.join(__dirname+'/index.html'));
 });
 
 app.get('/data', function (req, res) {
@@ -415,7 +200,7 @@ app.get('/data', function (req, res) {
 });
 
 app.get('/refreshData', function (req, res) {
-  gh.repos('realm', 'product').issues.fetch({state: "all", per_page: 100})
+  gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME).issues.fetch({state: "all", per_page: 100})
   .then((issues) => {
     processIssues(issues, () => {
       console.log("--> Finished Processing Issues");
@@ -425,8 +210,10 @@ app.get('/refreshData', function (req, res) {
   });
 });
 
-app.get('/', function (req, res) {
-  res.send(html);
+app.get('/getIssueURL', function (req, res) {
+  let taskId = parseInt(req.query.id);
+  let task = realm.objectForPrimaryKey('Task', taskId);
+  res.send(task.html_url);
 });
 
 app.listen(process.env.PORT || 3000, function () {

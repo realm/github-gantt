@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+</head>
+  <script src="/static/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
+  <link rel="stylesheet" href="/static/dhtmlxgantt.css" type="text/css" charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style type="text/css">
+    html, body{ height:100%; padding:0px; margin:0px; overflow: hidden;}
+    .weekend{ background: #BD7990!important; color:white !important;}
+    .buttonload {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      font-size: 16px;
+      outline:none;
+    }
+
+    .fa {
+      margin-left: -12px;
+      margin-right: 8px;
+    }
+    </style>
+<body onresize="zoomToFit()">
+  <div style="text-align: right;height: 40px;line-height: 40px;">
+    <button class="buttonload" onclick="refresh(this)" id="refreshButton">
+    Refresh
+    </button>
+  </div>
+  <div id="gantt_here" style='width:100%; height:100%;'></div>
+  <script type="text/javascript">
+    var HttpClient = function() {
+      this.get = function(aUrl, aCallback) {
+        var anHttpRequest = new XMLHttpRequest();
+        anHttpRequest.onreadystatechange = function() { 
+        if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
+          aCallback(anHttpRequest.responseText);
+        }
+
+        anHttpRequest.open( "GET", aUrl, true );            
+        anHttpRequest.send( null );
+      }
+    };
+    var client = new HttpClient();
+    gantt.config.xml_date = "%m-%d-%Y";
+    gantt.config.readonly = true;
+    gantt.config.grid_width = 400;
+    gantt.config.columns =  [
+      {name:"text",
+      label:"Task name",  
+      tree:true, 
+      width:'*' },
+    ];
+    gantt.attachEvent("onTaskClick", function(id, e) {
+      var newWin = window.open('', '_blank');
+      var url = "/getIssueURL?id="+id;
+      client.get(url, function(response) {
+        newWin.location.replace(response);
+      });
+    });
+        
+    gantt.config.scale_unit = "week"; 
+    gantt.config.date_scale = "%F, %d";
+
+    gantt.config.subscales = [
+      {unit:"month", step:1, date:"%M"}
+    ];
+    gantt.config.scale_height = 54;
+
+    gantt.init("gantt_here");
+    gantt.load("/data");
+
+    refresh(document.getElementById("refreshButton"));
+    
+    function refresh(toggle) {
+      toggle.innerHTML = '<i class="fa fa-refresh fa-spin"></i>Working';
+      
+      client.get("/refreshData", function(response) {
+        gantt.clearAll(); 
+        gantt.load("/data");
+        toggle.innerText = "Refresh";
+      });
+    };
+
+    function zoomToFit() {
+      var project = gantt.getSubtaskDates();
+      var areaWidth = gantt.$task.offsetWidth;
+
+      for (var i = 0; i < scaleConfigs.length; i++) {
+        var columnCount = getUnitsBetween(project.start_date, project.end_date, scaleConfigs[i].unit, scaleConfigs[i].step);
+        if ((columnCount + 2) * gantt.config.min_column_width <= areaWidth) {
+          break;
+        }
+      }
+
+      if (i == scaleConfigs.length) {
+        i--;
+      }
+      applyConfig(scaleConfigs[i], project);
+      gantt.render();
+    };
+    
+    // Zoom to fit functionality
+    function applyConfig(config, dates) {
+      gantt.config.scale_unit = config.scale_unit;
+      if (config.date_scale) {
+        gantt.config.date_scale = config.date_scale;
+        gantt.templates.date_scale = null;
+      }
+      else {
+        gantt.templates.date_scale = config.template;
+      }
+
+      gantt.config.step = config.step;
+      gantt.config.subscales = config.subscales;
+
+      if (dates) {
+        gantt.config.start_date = gantt.date.add(dates.start_date, -1, config.unit);
+        gantt.config.end_date = gantt.date.add(gantt.date[config.unit + "_start"](dates.end_date), 2, config.unit);
+      } 
+      else {
+        gantt.config.start_date = gantt.config.end_date = null;
+      }
+    };
+    
+    // get number of columns in timeline
+    function getUnitsBetween(from, to, unit, step) {
+      var start = new Date(from);
+      var end = new Date(to);
+      var units = 0;
+      while (start.valueOf() < end.valueOf()) {
+        units++;
+        start = gantt.date.add(start, step, unit);
+      }
+      return units;
+    };
+    
+    //Setting available scales
+    var scaleConfigs = [
+      // minutes
+      { unit: "minute", step: 1, scale_unit: "hour", date_scale: "%H", subscales: [
+        {unit: "minute", step: 1, date: "%H:%i"}
+      ]
+      },
+      // hours
+      { unit: "hour", step: 1, scale_unit: "day", date_scale: "%j %M",
+        subscales: [
+          {unit: "hour", step: 1, date: "%H:%i"}
+        ]
+      },
+      // days
+      { unit: "day", step: 1, scale_unit: "month", date_scale: "%F",
+        subscales: [
+          {unit: "day", step: 1, date: "%j"}
+        ]
+      },
+      // weeks
+      {unit: "week", step: 1, scale_unit: "month", date_scale: "%F",
+        subscales: [
+          {unit: "week", step: 1, template: function (date) {
+            var dateToStr = gantt.date.date_to_str("%d %M");
+            var endDate = gantt.date.add(gantt.date.add(date, 1, "week"), -1, "day");
+            return dateToStr(date) + " - " + dateToStr(endDate);
+          }}
+        ]},
+      // months
+      { unit: "month", step: 1, scale_unit: "year", date_scale: "%Y",
+        subscales: [
+          {unit: "month", step: 1, date: "%M"}
+        ]},
+      // quarters
+      { unit: "month", step: 3, scale_unit: "year", date_scale: "%Y",
+        subscales: [
+          {unit: "month", step: 3, template: function (date) {
+            var dateToStr = gantt.date.date_to_str("%M");
+            var endDate = gantt.date.add(gantt.date.add(date, 3, "month"), -1, "day");
+            return dateToStr(date) + " - " + dateToStr(endDate);
+          }}
+        ]},
+      // years
+      {unit: "year", step: 1, scale_unit: "year", date_scale: "%Y",
+        subscales: [
+          {unit: "year", step: 5, template: function (date) {
+            var dateToStr = gantt.date.date_to_str("%Y");
+            var endDate = gantt.date.add(gantt.date.add(date, 5, "year"), -1, "day");
+            return dateToStr(date) + " - " + dateToStr(endDate);
+          }}
+        ]},
+      // decades
+      {unit: "year", step: 10, scale_unit: "year", template: function (date) {
+        var dateToStr = gantt.date.date_to_str("%Y");
+        var endDate = gantt.date.add(gantt.date.add(date, 10, "year"), -1, "day");
+        return dateToStr(date) + " - " + dateToStr(endDate);
+      },
+        subscales: [
+          {unit: "year", step: 100, template: function (date) {
+            var dateToStr = gantt.date.date_to_str("%Y");
+            var endDate = gantt.date.add(gantt.date.add(date, 100, "year"), -1, "day");
+            return dateToStr(date) + " - " + dateToStr(endDate);
+          }}
+        ]}
+    ];
+</script>
+</body>

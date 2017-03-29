@@ -10,8 +10,9 @@ node_modules
 *.realm.lock
 *.realm.management
 /realm-object-server
+/config/config.js
 
 # Ignore all logfiles and tempfiles.
 /log/*.log
 /tmp
-/.DS_Store
+*.DS_Store
