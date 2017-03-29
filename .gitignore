@@ -8,6 +8,8 @@
 node_modules
 *.realm
 *.realm.lock
+*.realm.management
+/realm-object-server
 
 # Ignore all logfiles and tempfiles.
 /log/*.log

@@ -7,9 +7,11 @@ const dateFormat = require('dateformat');
 const utilities = require('./utilities');
 
 // Config
-const START_DATE_STRING = "StartDate:";
-const DUE_DATE_STRING = "ExpectedDate:";
-const GITHUB_API_TOKEN = process.env.GITHUB_TOKEN || "<INSERT TOKEN>"
+const START_DATE_STRING = "#### 🗓 Start Date:";
+const DUE_DATE_STRING = "#### 🗓 Expected Date:";
+const LABEL_STRING = "#### 💪 Team:";
+const PROGRESS_STRING = "#### 📈 Progress (0-1):"
+const GITHUB_API_TOKEN = (process.env.GITHUB_TOKEN || "<INSERT TOKEN>");
 
 // Realm Model Definition
 const TaskSchema = {
@@ -53,6 +55,10 @@ const TaskSchema = {
     // the date when a task is scheduled to be completed. Used as an alternative
     // to the duration property for setting the duration of a task.
     end_date: {type: 'date', optional: true},
+    // the background color of the task bar
+    color: {type: 'string', optional: true},
+    // the label used to identify the color of the task
+    label: {type: 'string', optional: true},
   }
 };
 
@@ -73,17 +79,48 @@ function processIssues(issues, completion, idArray) {
   for (index in issues.items) {
     let issue = issues.items[index];
     var startDate = new Date(issue.createdAt);
-    var dueDate = null
+    var dueDate = null;
+    var label = null;
+    var color = null;
+    var progress = null;
     
     // find keywords
     if (issue.body != null) {
       var lines = issue.body.split('\r\n')
       for (var j = 0; j < lines.length; j++) {
         if (!lines[j].indexOf(START_DATE_STRING)) {
-          startDate = new Date(lines[j].replace(START_DATE_STRING, ''))
+          let date = new Date(lines[j].replace(START_DATE_STRING, ''));
+          if (utilities.isDate(date)) {
+            startDate = date;
+          }
         }
         if (!lines[j].indexOf(DUE_DATE_STRING)) {
-          dueDate = new Date(lines[j].replace(DUE_DATE_STRING, ''))
+          let date = new Date(lines[j].replace(DUE_DATE_STRING, ''));
+          if (utilities.isDate(date)) {
+            dueDate = date;
+          }
+        }
+        if (!lines[j].indexOf(LABEL_STRING)) {
+          var labelString = lines[j].replace(LABEL_STRING, '');
+          if (utilities.isString(labelString)) {
+            labelString = labelString.trim();
+            if (utilities.isArray(issue.labels)) {
+              for (index in issue.labels) {
+                let aLabel = issue.labels[index];
+                if (aLabel.name == labelString) {
+                  label = aLabel.name;
+                  if (utilities.isString(aLabel.color)) {
+                    color = "#"+aLabel.color.toUpperCase();
+                  }
+                }
+              }
+            }
+          }
+        }
+        if (!lines[j].indexOf(PROGRESS_STRING)) {
+          progress = utilities.sanitizeFloat(lines[j].replace(PROGRESS_STRING, ''));
+          
+          
         }
       }
     }
@@ -101,6 +138,9 @@ function processIssues(issues, completion, idArray) {
         state: issue.state,
         isDeleted: false,
         end_date: dueDate,
+        label: label,
+        color: color,
+        progress: progress,
       }, true);
     });
     
@@ -351,7 +391,7 @@ app.get('/getIssueURL', function (req, res) {
 });
 
 app.get('/data', function (req, res) {
-  let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true);
+  let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true).sorted('label');
   var taskData = {data: []};
   for (index in tasks) {
     let task = tasks[index];
@@ -362,6 +402,8 @@ app.get('/data', function (req, res) {
       duration: task.duration,
       end_date: dateFormat(task.end_date, "mm-dd-yyyy"),
       url: task.url,
+      progress: task.progress,
+      color: task.color,
     };
     taskData.data.push(formattedTask);
   }
@@ -374,7 +416,7 @@ app.get('/refreshData', function (req, res) {
     processIssues(issues, () => {
       console.log("--> Finished Processing Issues");
       
-      let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true);
+      let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true).sorted('label');
       var taskData = {data: []};
       for (index in tasks) {
         let task = tasks[index];
@@ -385,6 +427,8 @@ app.get('/refreshData', function (req, res) {
           duration: task.duration,
           end_date: dateFormat(task.end_date, "mm-dd-yyyy"),
           url: task.url,
+          progress: task.progress,
+          color: task.color,
         };
         taskData.data.push(formattedTask);
       }

@@ -23,6 +23,20 @@ var isArray = function(x) {
     return x !== null && x !== undefined && x.constructor === Array
 }
 
+var isDate = function(d) {
+  if ( Object.prototype.toString.call(d) === "[object Date]" ) {
+    if ( isNaN( d.getTime() ) ) {
+      return false;
+    }
+    else {
+      return true;
+    }
+  }
+  else {
+    return false;
+  }
+}
+
 var isRealmObject = function(x) {
     return x !== null && x !== undefined && x.constructor === Realm.Object
 }
@@ -91,15 +105,16 @@ var sanitizeBool = function(bool) {
     }
 }
 
-module.exports.isString = isString;
-module.exports.isNumber = isNumber;
-module.exports.isBoolean = isBoolean;
-module.exports.isObject = isObject;
-module.exports.isArray = isArray;
-module.exports.isRealmObject = isRealmObject;
-module.exports.isRealmList = isRealmList;
-module.exports.sanitizeFloat = sanitizeFloat;
-module.exports.sanitizeInt = sanitizeInt;
-module.exports.sanitizeString = sanitizeString;
-module.exports.sanitizeStringNonNull = sanitizeStringNonNull;
-module.exports.sanitizeBool = sanitizeBool;
+exports.isString = isString;
+exports.isNumber = isNumber;
+exports.isBoolean = isBoolean;
+exports.isObject = isObject;
+exports.isArray = isArray;
+exports.isDate = isDate;
+exports.isRealmObject = isRealmObject;
+exports.isRealmList = isRealmList;
+exports.sanitizeFloat = sanitizeFloat;
+exports.sanitizeInt = sanitizeInt;
+exports.sanitizeString = sanitizeString;
+exports.sanitizeStringNonNull = sanitizeStringNonNull;
+exports.sanitizeBool = sanitizeBool;
