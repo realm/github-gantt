@@ -119,8 +119,6 @@ function processIssues(issues, completion, idArray) {
         }
         if (!lines[j].indexOf(PROGRESS_STRING)) {
           progress = utilities.sanitizeFloat(lines[j].replace(PROGRESS_STRING, ''));
-          
-          
         }
       }
     }
@@ -173,6 +171,27 @@ function processIssues(issues, completion, idArray) {
     
     completion();
   }
+}
+
+function getTaskChartData() {
+  let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true).sorted('label');
+  var taskData = {data: []};
+  for (index in tasks) {
+    let task = tasks[index];
+    let formattedTask = {
+      id: task.id,
+      text: task.text,
+      start_date: dateFormat(task.start_date, "mm-dd-yyyy"),
+      duration: task.duration,
+      end_date: dateFormat(task.end_date, "mm-dd-yyyy"),
+      url: task.url,
+      progress: task.progress,
+      color: task.color,
+    };
+    taskData.data.push(formattedTask);
+  }
+  
+  return taskData;
 }
 
 app.use('/static', express.static(path.join(__dirname, 'node_modules/dhtmlx-gantt/codebase')));
@@ -391,22 +410,7 @@ app.get('/getIssueURL', function (req, res) {
 });
 
 app.get('/data', function (req, res) {
-  let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true).sorted('label');
-  var taskData = {data: []};
-  for (index in tasks) {
-    let task = tasks[index];
-    let formattedTask = {
-      id: task.id,
-      text: task.text,
-      start_date: dateFormat(task.start_date, "mm-dd-yyyy"),
-      duration: task.duration,
-      end_date: dateFormat(task.end_date, "mm-dd-yyyy"),
-      url: task.url,
-      progress: task.progress,
-      color: task.color,
-    };
-    taskData.data.push(formattedTask);
-  }
+  var taskData = getTaskChartData();
   res.send(taskData);
 });
 
@@ -415,23 +419,7 @@ app.get('/refreshData', function (req, res) {
   .then((issues) => {
     processIssues(issues, () => {
       console.log("--> Finished Processing Issues");
-      
-      let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true).sorted('label');
-      var taskData = {data: []};
-      for (index in tasks) {
-        let task = tasks[index];
-        let formattedTask = {
-          id: task.id,
-          text: task.text,
-          start_date: dateFormat(task.start_date, "mm-dd-yyyy"),
-          duration: task.duration,
-          end_date: dateFormat(task.end_date, "mm-dd-yyyy"),
-          url: task.url,
-          progress: task.progress,
-          color: task.color,
-        };
-        taskData.data.push(formattedTask);
-      }
+      var taskData = getTaskChartData();
       res.send(taskData);
     });
   });
@@ -442,5 +430,6 @@ app.get('/', function (req, res) {
 });
 
 app.listen(process.env.PORT || 3000, function () {
-  console.log('Example app listening on port 3000!');
+  let port = (process.env.PORT || 3000);
+  console.log('Github-Gantt listening on port ' + port);
 });
