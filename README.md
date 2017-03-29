@@ -11,7 +11,11 @@ is parsed for specific search strings to identify the start/end dates, which lab
 ## Setup
 First you will need to configure the server, run:
 ```
+// Mac
 sh ./setup.sh
+
+// Linux
+bash ./setup.sh
 ```
 This will ask for your Github API token, organization name, and repo name. It will then generate a config file at
 ```
