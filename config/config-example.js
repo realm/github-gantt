@@ -10,6 +10,6 @@ module.exports = {
   // Configuration for the labels in Github issues to search for
   START_DATE_STRING: "#### 🗓 Start Date:",
   DUE_DATE_STRING: "#### 🗓 Expected Date:",
-  LABEL_STRING: "#### 💪 Team:",
+  LABEL_STRING: "#### 🏷 Label:",
   PROGRESS_STRING: "#### 📈 Progress (0-1):",
 }
