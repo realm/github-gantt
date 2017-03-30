@@ -4,6 +4,7 @@
   "description": "Gantt chart for Github issues",
   "main": "index.js",
   "dependencies": {
+    "body-parser": "^1.17.1",
     "dateformat": "^2.0.0",
     "dhtmlx-gantt": "^4.1.0",
     "express": "^4.15.2",

@@ -44,13 +44,24 @@
           aCallback(anHttpRequest.responseText);
         }
 
-        anHttpRequest.open( "GET", aUrl, true );            
-        anHttpRequest.send( null );
+        anHttpRequest.open("GET", aUrl, true);            
+        anHttpRequest.send(null);
       }
+      this.postObject = function(aUrl, object, aCallback) {
+        var anHttpRequest = new XMLHttpRequest();
+        anHttpRequest.onreadystatechange = function() { 
+        if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
+          aCallback(anHttpRequest.responseText);
+        }
+
+        anHttpRequest.open("POST", aUrl, true); 
+        anHttpRequest.setRequestHeader('Content-Type', 'application/json');           
+        anHttpRequest.send(JSON.stringify(object));
+      } 
     };
     var client = new HttpClient();
     gantt.config.xml_date = "%m-%d-%Y";
-    gantt.config.readonly = true;
+    gantt.config.drag_links = false;
     gantt.config.grid_width = 0;
     gantt.config.columns =  [
       {name:"text",
@@ -63,6 +74,13 @@
       var url = "/getIssueURL?id="+id;
       client.get(url, function(response) {
         newWin.location.replace(response);
+      });
+    });
+    
+    gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
+      var task = gantt.getTask(id);
+      client.postObject("/updateIssue", task, function(response) {
+        console.log(response);
       });
     });
         

@@ -6,6 +6,7 @@ const path = require('path');
 const dateFormat = require('dateformat');
 const utilities = require('./utilities');
 const config = require('./config/config');
+const bodyParser = require('body-parser');
 
 // Realm Model Definition
 const TaskSchema = {
@@ -214,6 +215,42 @@ app.get('/getIssueURL', function (req, res) {
   let taskId = parseInt(req.query.id);
   let task = realm.objectForPrimaryKey('Task', taskId);
   res.send(task.html_url);
+});
+
+app.post('/updateIssue', bodyParser.json(), function (req, res) {
+  if (!req.body) return res.sendStatus(400);
+  let chartTask = req.body;
+  var task = realm.objectForPrimaryKey('Task', chartTask.id);
+  if (utilities.isRealmObject(task)) {
+    // Write to Realm first
+    realm.write(() => {
+      task.start_date = new Date(chartTask.start_date);
+      task.end_date = new Date(chartTask.end_date);
+      task.duration = utilities.sanitizeInt(chartTask.duration);
+      task.progress = utilities.sanitizeFloat(chartTask.progress);
+      
+      var lines = task.body.split('\r\n');
+      for (var j = 0; j < lines.length; j++) {
+        if (!lines[j].indexOf(config.START_DATE_STRING)) {
+          lines[j] = config.START_DATE_STRING + " " + dateFormat(task.start_date, "mm-dd-yyyy");
+        }
+        if (!lines[j].indexOf(config.DUE_DATE_STRING)) {
+          lines[j] = config.DUE_DATE_STRING + " " + dateFormat(task.end_date, "mm-dd-yyyy");
+        }
+        if (!lines[j].indexOf(config.PROGRESS_STRING)) {
+          lines[j] = config.PROGRESS_STRING + " " + task.progress.toFixed(2);
+        }
+      }
+      let newBody = lines.join('\r\n');
+      task.body = newBody;
+    });
+    // Now post to Github
+    gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME).issues(task.number).update({
+      body: task.body,
+    }).then((issue) => {
+      res.send("Success");
+    });
+  }
 });
 
 app.listen(process.env.PORT || 3000, function () {
