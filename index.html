@@ -4,7 +4,8 @@
 </head>
   <script src="/static/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
   <script src="/static/ext/dhtmlxgantt_marker.js" type="text/javascript" charset="utf-8"></script>
-  <link rel="stylesheet" href="/static/dhtmlxgantt.css" type="text/css" charset="utf-8">
+  <link rel="stylesheet" href="/static/skins/dhtmlxgantt_broadway.css" type="text/css" charset="utf-8">
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <style type="text/css">
     html, body{ height:100%; padding:0px; margin:0px; overflow: hidden;}
@@ -50,7 +51,7 @@
     var client = new HttpClient();
     gantt.config.xml_date = "%m-%d-%Y";
     gantt.config.readonly = true;
-    gantt.config.grid_width = 400;
+    gantt.config.grid_width = 0;
     gantt.config.columns =  [
       {name:"text",
       label:"Task name",  
