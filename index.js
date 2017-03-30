@@ -169,7 +169,7 @@ function processIssues(issues, completion, idArray) {
 }
 
 function getTaskChartData() {
-  let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('start_date', true).sorted('label');
+  let tasks = realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null').sorted('label', true);
   var taskData = {data: []};
   for (index in tasks) {
     let task = tasks[index];
