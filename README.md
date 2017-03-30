@@ -1,6 +1,8 @@
 # Github-Gantt
 Generate Gantt Charts From Github Issues!
 
+![Gantt Chart Example](gantt-example.png)
+
 For organizations, especially open-source teams, that spend their day in Github there is no easy way to visualize the time
 table on work outlined in issues. Instead, this requires syncing Github issues with other charting or roadmapping tools,
 creating an unnecessary burden to use multiple tools.
@@ -34,7 +36,7 @@ GITHUB_REPO_NAME: ""
 // Configuration for the labels in Github issues to search for
 START_DATE_STRING: "#### 🗓 Start Date:"
 DUE_DATE_STRING: "#### 🗓 Expected Date:"
-LABEL_STRING: "#### 💪 Team:"
+LABEL_STRING: "#### 🏷 Label:"
 PROGRESS_STRING: "#### 📈 Progress (0-1):"
 ```
 ## Start the server
