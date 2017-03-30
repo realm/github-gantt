@@ -50,7 +50,13 @@ var sanitizeFloat = function(number) {
         return number;
     }
     else if (isString(number)) {
-        return parseFloat(number);
+        let n = parseFloat(number);
+        if (isNaN(n)) {
+          return null;
+        }
+        else {
+          return n;
+        }
     }
     else {
         return null;
