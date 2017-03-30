@@ -3,6 +3,7 @@
   <meta http-equiv="Content-type" content="text/html; charset=utf-8">
 </head>
   <script src="/static/dhtmlxgantt.js" type="text/javascript" charset="utf-8"></script>
+  <script src="/static/ext/dhtmlxgantt_marker.js" type="text/javascript" charset="utf-8"></script>
   <link rel="stylesheet" href="/static/dhtmlxgantt.css" type="text/css" charset="utf-8">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <style type="text/css">
@@ -20,6 +21,10 @@
     .fa {
       margin-left: -12px;
       margin-right: 8px;
+    }
+
+    .today_line {
+      background-color: #2b2b2b;
     }
     </style>
 <body onresize="zoomToFit()">
@@ -67,6 +72,10 @@
       {unit:"month", step:1, date:"%M"}
     ];
     gantt.config.scale_height = 54;
+    
+    var date_to_str = gantt.date.date_to_str(gantt.config.task_date);
+    var today = new Date();
+    gantt.addMarker({ start_date: today, css: "today_line", text: "Today",  title:date_to_str( today)});
 
     gantt.init("gantt_here");
     gantt.load("/data");
@@ -79,6 +88,11 @@
       client.get("/refreshData", function(response) {
         gantt.clearAll(); 
         gantt.load("/data");
+        
+        var date_to_str = gantt.date.date_to_str(gantt.config.task_date);
+        var today = new Date();
+        gantt.addMarker({ start_date: today, css: "today_line", text: "Today",  title:date_to_str( today)});
+        
         toggle.innerText = "Refresh";
       });
     };
