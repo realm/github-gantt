@@ -237,7 +237,7 @@ app.post('/updateIssue', bodyParser.json(), function (req, res) {
         if (!lines[j].indexOf(config.DUE_DATE_STRING)) {
           lines[j] = config.DUE_DATE_STRING + " " + dateFormat(task.end_date, "mm-dd-yyyy");
         }
-        if (!lines[j].indexOf(config.PROGRESS_STRING)) {
+        if (!lines[j].indexOf(config.PROGRESS_STRING && utilities.isNumber(task.progress))) {
           lines[j] = config.PROGRESS_STRING + " " + task.progress.toFixed(2);
         }
       }
