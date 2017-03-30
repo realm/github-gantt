@@ -46,6 +46,6 @@ PORT=80 node index.js
 ```
 
 ### Additional Work
-- [ ] Support editing in the chart itself, passing back date changes to the Github issue
+- [x] Support editing in the chart itself, passing back date changes to the Github issue
 - [ ] Support listing of dependencies to display in the chart
 - [ ] UI improvements to show who the task is assigned to
