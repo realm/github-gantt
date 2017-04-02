@@ -105,50 +105,50 @@ function processIssues(issues, completion, idArray) {
     idArray = [];
   }
   
-  for (index in issues.items) {
-    let issue = issues.items[index];
-    var startDate = new Date(issue.createdAt);
-    var dueDate = null;
-    var labelName = null;
-    var color = null;
-    var progress = null;
-    
-    // find keywords
-    if (issue.body != null) {
-      var lines = issue.body.split('\r\n')
-      for (var j = 0; j < lines.length; j++) {
-        if (!lines[j].indexOf(config.START_DATE_STRING)) {
-          let date = new Date(lines[j].replace(config.START_DATE_STRING, ''));
-          if (utilities.isDate(date)) {
-            startDate = date;
-          }
-        }
-        if (!lines[j].indexOf(config.DUE_DATE_STRING)) {
-          let date = new Date(lines[j].replace(config.DUE_DATE_STRING, ''));
-          if (utilities.isDate(date)) {
-            dueDate = date;
-          }
-        }
-        if (!lines[j].indexOf(config.LABEL_STRING)) {
-          var labelString = lines[j].replace(config.LABEL_STRING, '');
-          if (utilities.isString(labelString)) {
-            labelString = labelString.trim();
-            
-            // Find label in realm
-            let label = realm.objects('Label').filtered('name = $0', labelString)[0];
-            if (utilities.isRealmObject(label)) {
-              color = "#"+label.color.toUpperCase();
-              labelName = label.name;
+  realm.write(() => {
+    for (index in issues.items) {
+      let issue = issues.items[index];
+      var startDate = new Date(issue.createdAt);
+      var dueDate = null;
+      var labelName = null;
+      var color = null;
+      var progress = null;
+      
+      // find keywords
+      if (issue.body != null) {
+        var lines = issue.body.split('\r\n')
+        for (var j = 0; j < lines.length; j++) {
+          if (!lines[j].indexOf(config.START_DATE_STRING)) {
+            let date = new Date(lines[j].replace(config.START_DATE_STRING, ''));
+            if (utilities.isDate(date)) {
+              startDate = date;
             }
           }
-        }
-        if (!lines[j].indexOf(config.PROGRESS_STRING)) {
-          progress = utilities.sanitizeFloat(lines[j].replace(config.PROGRESS_STRING, ''));
+          if (!lines[j].indexOf(config.DUE_DATE_STRING)) {
+            let date = new Date(lines[j].replace(config.DUE_DATE_STRING, ''));
+            if (utilities.isDate(date)) {
+              dueDate = date;
+            }
+          }
+          if (!lines[j].indexOf(config.LABEL_STRING)) {
+            var labelString = lines[j].replace(config.LABEL_STRING, '');
+            if (utilities.isString(labelString)) {
+              labelString = labelString.trim();
+              
+              // Find label in realm
+              let label = realm.objects('Label').filtered('name = $0', labelString)[0];
+              if (utilities.isRealmObject(label)) {
+                color = "#"+label.color.toUpperCase();
+                labelName = label.name;
+              }
+            }
+          }
+          if (!lines[j].indexOf(config.PROGRESS_STRING)) {
+            progress = utilities.sanitizeFloat(lines[j].replace(config.PROGRESS_STRING, ''));
+          }
         }
       }
-    }
-    
-    realm.write(() => {
+      
       realm.create('Task', {
         text: utilities.sanitizeStringNonNull(issue.title),
         start_date:  startDate,
@@ -165,10 +165,10 @@ function processIssues(issues, completion, idArray) {
         color: color,
         progress: progress,
       }, true);
-    });
-    
-    idArray.push(issue.id);
-  }
+      
+      idArray.push(issue.id);
+    }
+  });
   
   if (utilities.isString(issues.nextPageUrl)) {
     issues.nextPage.fetch()
