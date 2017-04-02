@@ -36,6 +36,10 @@
     .today_line {
       background-color: #2b2b2b;
     }
+    .status_line{
+      background-color: #0ca30a;
+    }
+
     </style>
 <body onresize="zoomToFit()">
   <div style="text-align: right;">
@@ -101,9 +105,21 @@
     ];
     gantt.config.scale_height = 54;
     
-    var date_to_str = gantt.date.date_to_str(gantt.config.task_date);
-    var today = new Date();
-    gantt.addMarker({ start_date: today, css: "today_line", text: "Today",  title:date_to_str( today)});
+    gantt.attachEvent("onLoadStart", function(){
+      client.get('/milestones', function(response) {
+        let milestones = JSON.parse(response);
+        for (index in milestones) {
+          let milestone = JSON.parse(milestones[index]);
+          let date = new Date(milestone.dueOn);
+          gantt.addMarker({ start_date: date, css: "status_line", text: milestone.title,  title:milestone.description});
+        }
+        var date_to_str = gantt.date.date_to_str(gantt.config.task_date);
+        var today = new Date();
+        gantt.addMarker({ start_date: today, css: "today_line", text: "Today",  title:date_to_str(today)});
+        
+        gantt.renderMarkers();
+      });
+    });
 
     gantt.init("gantt_here");
     gantt.load("/data");
@@ -116,10 +132,6 @@
       client.get("/refreshData", function(response) {
         gantt.clearAll(); 
         gantt.load("/data");
-        
-        var date_to_str = gantt.date.date_to_str(gantt.config.task_date);
-        var today = new Date();
-        gantt.addMarker({ start_date: today, css: "today_line", text: "Today",  title:date_to_str( today)});
         
         toggle.innerText = "Refresh";
       });

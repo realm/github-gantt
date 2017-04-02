@@ -19,7 +19,7 @@ const TaskSchema = {
     id: 'int', // the task id
     body: 'string',
     url: 'string',
-    html_url: 'string',
+    htmlUrl: 'string',
     number: 'int',
     // Indicates the state of the issues to return. 
     // Can be either open, closed, or all.
@@ -69,17 +69,45 @@ const LabelSchema = {
   }
 }
 
-let realm = new Realm({
-  path: 'tasks.realm',
-  schema: [TaskSchema, LabelSchema],
-});
+const MilestoneSchema = {
+  name: 'Milestone',
+  primaryKey: 'id',
+  properties: {
+    url: 'string', //api.github.com/repos/octocat/Hello-World/milestones/1"
+    htmlUrl: 'string', // https://github.com/octocat/Hello-World/milestones/v1.0"
+    id: 'int',
+    number: 'int',
+    state: 'string',
+    title: 'string',
+    description: 'string',
+    openIssues: 'int',
+    closedIssues: 'int',
+    createdAt: 'date',
+    updatedAt: {type: 'date', optional: true},
+    closedAt: {type: 'date', optional: true},
+    dueOn: {type: 'date', optional: true},
+  }
+}
 
 const gh = new GitHub({
   token: config.GITHUB_API_TOKEN
 });
 
+let realm = new Realm({
+  path: 'tasks.realm',
+  schema: [TaskSchema, LabelSchema, MilestoneSchema],
+  schemaVersion: 1,
+  migration: function(oldRealm, newRealm) {
+    if (oldRealm.schemaVersion < 1) {
+      
+    }
+  }
+});
+
+let repo = gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME);
+
 function getLabels(completion) {
-  gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME).labels.fetch()
+  repo.labels.fetch()
   .then((labels) => {
     let items = labels.items;
     if (utilities.isArray(items)) {
@@ -92,6 +120,48 @@ function getLabels(completion) {
             name: label.name,
             color: label.color,
             default: label.default,
+          }, true);
+        }
+      });
+    }
+    completion();
+  });
+}
+
+function getMilestones(completion) {
+  repo.milestones.fetch()
+  .then((milestones) => {
+    let items = milestones.items;
+    if (utilities.isArray(items)) {
+      realm.write(() => {
+        for (index in items) {
+          let milestone = items[index];
+          var updatedAt = null;
+          var closedAt = null;
+          var dueOn = null;
+          if (utilities.isString(milestone.updatedAt)) {
+            updatedAt = new Date(milestone.updatedAt);
+          }
+          if (utilities.isString(milestone.closedAt)) {
+            closedAt = new Date(milestone.closedAt);
+          }
+          if (utilities.isString(milestone.dueOn)) {
+            dueOn = new Date(milestone.dueOn);
+          }
+          realm.create('Milestone', {
+            url: milestone.url,
+            htmlUrl: milestone.htmlUrl,
+            id: milestone.id,
+            number: milestone.number,
+            state: milestone.state,
+            title: milestone.title,
+            description: milestone.description,
+            openIssues: milestone.openIssues,
+            closedIssues: milestone.closedIssues,
+            createdAt: new Date(milestone.createdAt),
+            updatedAt: updatedAt,
+            closedAt: closedAt,
+            dueOn: dueOn,
           }, true);
         }
       });
@@ -156,7 +226,7 @@ function processIssues(issues, completion, idArray) {
         id: issue.id,
         body: utilities.sanitizeStringNonNull(issue.body),
         url: utilities.sanitizeStringNonNull(issue.url),
-        html_url: utilities.sanitizeStringNonNull(issue.htmlUrl),
+        htmlUrl: utilities.sanitizeStringNonNull(issue.htmlUrl),
         number: issue.number,
         state: issue.state,
         isDeleted: false,
@@ -230,11 +300,22 @@ app.get('/data', function (req, res) {
   res.send(taskData);
 });
 
+app.get('/milestones', function (req, res) {
+  let milestones = realm.objects('Milestone').filtered('dueOn != null');
+  let array = milestones.map((object) => {
+    return JSON.stringify(object);
+  });
+  res.send(array);
+});
+
 app.get('/refreshData', function (req, res) {
   getLabels(() => {
     console.log("--> Retrieved Labels");
   });
-  gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME).issues.fetch({state: "all", per_page: 100})
+  getMilestones(() => {
+    console.log("--> Retrieved Milestones");
+  });
+  repo.issues.fetch({state: "all", per_page: 100})
   .then((issues) => {
     processIssues(issues, () => {
       console.log("--> Finished Processing Issues");
@@ -247,7 +328,7 @@ app.get('/refreshData', function (req, res) {
 app.get('/getIssueURL', function (req, res) {
   let taskId = parseInt(req.query.id);
   let task = realm.objectForPrimaryKey('Task', taskId);
-  res.send(task.html_url);
+  res.send(task.htmlUrl);
 });
 
 app.post('/updateIssue', bodyParser.json(), function (req, res) {
@@ -278,7 +359,7 @@ app.post('/updateIssue', bodyParser.json(), function (req, res) {
       task.body = newBody;
     });
     // Now post to Github
-    gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME).issues(task.number).update({
+    repo.issues(task.number).update({
       body: task.body,
     }).then((issue) => {
       res.send("Success");
