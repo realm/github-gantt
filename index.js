@@ -327,12 +327,19 @@ app.get('/refreshData', function (req, res) {
 
 app.get('/getIssueURL', function (req, res) {
   let taskId = parseInt(req.query.id);
-  let task = realm.objectForPrimaryKey('Task', taskId);
-  res.send(task.htmlUrl);
+  if (!isNaN(taskId)) {
+    let task = realm.objectForPrimaryKey('Task', taskId);
+    res.send(task.htmlUrl);
+  }
+  else {
+    res.sendStatus(400);
+  }
 });
 
 app.post('/updateIssue', bodyParser.json(), function (req, res) {
-  if (!req.body) return res.sendStatus(400);
+  if (!req.body || utilities.isObject(req.body)) {
+    return res.sendStatus(400);
+  }
   let chartTask = req.body;
   var task = realm.objectForPrimaryKey('Task', chartTask.id);
   if (utilities.isRealmObject(task)) {
