@@ -57,14 +57,48 @@ const TaskSchema = {
   }
 };
 
+const LabelSchema = {
+  name: 'Label',
+  primaryKey: 'id',
+  properties: {
+    id: 'int',
+    url: 'string',
+    name: 'string',
+    color: 'string',
+    default: 'bool',
+  }
+}
+
 let realm = new Realm({
   path: 'tasks.realm',
-  schema: [TaskSchema]
+  schema: [TaskSchema, LabelSchema],
 });
 
 const gh = new GitHub({
   token: config.GITHUB_API_TOKEN
 });
+
+function getLabels(completion) {
+  gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME).labels.fetch()
+  .then((labels) => {
+    let items = labels.items;
+    if (utilities.isArray(items)) {
+      realm.write(() => {
+        for (index in items) {
+          let label = items[index];
+          realm.create('Label', {
+            id: label.id,
+            url: label.url,
+            name: label.name,
+            color: label.color,
+            default: label.default,
+          }, true);
+        }
+      });
+    }
+    completion();
+  });
+}
 
 function processIssues(issues, completion, idArray) {
   if (!utilities.isArray(idArray)) {
@@ -75,7 +109,7 @@ function processIssues(issues, completion, idArray) {
     let issue = issues.items[index];
     var startDate = new Date(issue.createdAt);
     var dueDate = null;
-    var label = null;
+    var labelName = null;
     var color = null;
     var progress = null;
     
@@ -99,16 +133,12 @@ function processIssues(issues, completion, idArray) {
           var labelString = lines[j].replace(config.LABEL_STRING, '');
           if (utilities.isString(labelString)) {
             labelString = labelString.trim();
-            if (utilities.isArray(issue.labels)) {
-              for (index in issue.labels) {
-                let aLabel = issue.labels[index];
-                if (aLabel.name == labelString) {
-                  label = aLabel.name;
-                  if (utilities.isString(aLabel.color)) {
-                    color = "#"+aLabel.color.toUpperCase();
-                  }
-                }
-              }
+            
+            // Find label in realm
+            let label = realm.objects('Label').filtered('name = $0', labelString)[0];
+            if (utilities.isRealmObject(label)) {
+              color = "#"+label.color.toUpperCase();
+              labelName = label.name;
             }
           }
         }
@@ -131,7 +161,7 @@ function processIssues(issues, completion, idArray) {
         state: issue.state,
         isDeleted: false,
         end_date: dueDate,
-        label: label,
+        label: labelName,
         color: color,
         progress: progress,
       }, true);
@@ -201,6 +231,9 @@ app.get('/data', function (req, res) {
 });
 
 app.get('/refreshData', function (req, res) {
+  getLabels(() => {
+    console.log("--> Retrieved Labels");
+  });
   gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME).issues.fetch({state: "all", per_page: 100})
   .then((issues) => {
     processIssues(issues, () => {
