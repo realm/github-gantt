@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const GitHub = require('octokat')
+const GitHub = require('octokat');
 const Realm = require('realm');
 const path = require('path');
 const dateFormat = require('dateformat');
