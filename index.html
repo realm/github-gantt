@@ -108,11 +108,8 @@
       width:'*' },
     ];
     gantt.attachEvent("onTaskClick", function(id, e) {
-      var newWin = window.open('', '_blank');
-      var url = "/getIssueURL?id="+id;
-      client.get(url, function(response) {
-        newWin.location.replace(response);
-      });
+      var task = gantt.getTask(id);
+      var newWin = window.open(task.htmlUrl, '_blank');
     });
     
     gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){

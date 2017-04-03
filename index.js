@@ -282,6 +282,7 @@ function getTaskChartData() {
       url: task.url,
       progress: task.progress,
       color: task.color,
+      htmlUrl: task.htmlUrl,
     };
     taskData.data.push(formattedTask);
   }
@@ -340,17 +341,6 @@ app.get('/refreshData', function (req, res) {
       res.send(taskData);
     });
   });
-});
-
-app.get('/getIssueURL', function (req, res) {
-  let taskId = parseInt(req.query.id);
-  if (!isNaN(taskId)) {
-    let task = realm.objectForPrimaryKey('Task', taskId);
-    res.send(task.htmlUrl);
-  }
-  else {
-    res.sendStatus(400);
-  }
 });
 
 app.post('/updateIssue', bodyParser.json(), function (req, res) {
