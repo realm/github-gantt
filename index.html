@@ -23,29 +23,54 @@
       background-color: #4CAF50;
       border: none;
       color: white;
-      padding: 12px 24px;
+      width: 120px;
+      height: 100%;
       font-size: 16px;
       outline:none;
     }
-
     .fa {
       margin-left: -12px;
       margin-right: 8px;
     }
-
     .today_line {
       background-color: #2b2b2b;
     }
     .status_line{
       background-color: #0ca30a;
     }
-
+    #container {
+      height: 40px;
+      width: 100%;
+      display: flex;
+    }
+    #legend {
+      height: 40px;
+      width: -moz-calc(100% - 120px);
+      width: -webkit-calc(100% - 120px);
+      width: -o-calc(100% - 120px);
+      width: calc(100% - 120px);
+      border-spacing:5px;
+      display: table;
+      color: white;
+    }
+    #legendItem {
+      display:table-cell;
+      text-align: center;
+      vertical-align: middle;
+      font: 14px system-ui;
+      width: 1%;
+      white-space: nowrap;
+    }
     </style>
 <body onresize="zoomToFit()">
-  <div style="text-align: right;">
-    <button class="buttonload" onclick="refresh(this)" id="refreshButton">
-    Refresh
-    </button>
+  <div id="container">
+    <div id="legend">
+    </div>
+    <div style="text-align: right;">
+      <button class="buttonload" onclick="refresh(this)" id="refreshButton">
+        Refresh
+      </button>
+    </div>
   </div>
   <div id="gantt_here" style='position: absolute;top: 40px;bottom: 0px;right: 0px;left: 0px;'></div>
   <script type="text/javascript">
@@ -106,8 +131,11 @@
     gantt.config.scale_height = 54;
     
     gantt.attachEvent("onLoadStart", function(){
-      client.get('/milestones', function(response) {
-        let milestones = JSON.parse(response);
+      client.get('/additionalData', function(response) {
+        let data = JSON.parse(response);
+        
+        // Handle Milestones
+        let milestones = data.milestones;
         for (index in milestones) {
           let milestone = JSON.parse(milestones[index]);
           let date = new Date(milestone.dueOn);
@@ -116,8 +144,23 @@
         var date_to_str = gantt.date.date_to_str(gantt.config.task_date);
         var today = new Date();
         gantt.addMarker({ start_date: today, css: "today_line", text: "Today",  title:date_to_str(today)});
-        
         gantt.renderMarkers();
+        
+        // Handle labels
+        var legend = document.getElementById("legend");
+        while (legend.hasChildNodes()) {
+          legend.removeChild(legend.lastChild);
+        }
+        
+        let labels = data.labels;
+        for (index in labels) {
+          let label = labels[index];
+          var div = document.createElement("DIV");
+          div.id = "legendItem";
+          div.innerHTML = label.name;
+          div.style.backgroundColor = label.color;
+          legend.appendChild(div);
+        }
       });
     });
 
@@ -126,14 +169,14 @@
 
     refresh(document.getElementById("refreshButton"));
     
-    function refresh(toggle) {
-      toggle.innerHTML = '<i class="fa fa-refresh fa-spin"></i>Working';
+    function refresh(element) {
+      element.innerHTML = '<i class="fa fa-refresh fa-spin"></i>Working';
       
       client.get("/refreshData", function(response) {
         gantt.clearAll(); 
         gantt.load("/data");
         
-        toggle.innerText = "Refresh";
+        element.innerText = "Refresh";
       });
     };
 

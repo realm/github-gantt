@@ -300,12 +300,29 @@ app.get('/data', function (req, res) {
   res.send(taskData);
 });
 
-app.get('/milestones', function (req, res) {
+app.get('/additionalData', function (req, res) {
+  var data = {};
+  
+  // Handle milestones
   let milestones = realm.objects('Milestone').filtered('dueOn != null');
-  let array = milestones.map((object) => {
+  data.milestones = milestones.map((object) => {
     return JSON.stringify(object);
   });
-  res.send(array);
+  
+  // Handle labels
+  var hash = {},labels = [];
+  realm.objects('Task').filtered('isDeleted = false AND state = "open" AND end_date != null AND label != null').sorted('label', true).forEach((object, index) => {
+    if (!hash[object.label]) {
+      hash[object.label] = true; 
+      labels.push({
+        name: object.label,
+        color: object.color,
+      }); 
+    }
+  });
+  data.labels = labels;
+  
+  res.send(data);
 });
 
 app.get('/refreshData', function (req, res) {
