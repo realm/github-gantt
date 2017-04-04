@@ -11,6 +11,7 @@ node_modules
 *.realm.management
 /realm-object-server
 /config/config.js
+realm-professional.tgz
 
 # Ignore all logfiles and tempfiles.
 /log/*.log
