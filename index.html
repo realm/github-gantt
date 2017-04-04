@@ -136,7 +136,11 @@
         for (index in milestones) {
           let milestone = JSON.parse(milestones[index]);
           let date = new Date(milestone.dueOn);
-          gantt.addMarker({ start_date: date, css: "status_line", text: milestone.title,  title:milestone.description});
+          gantt.addMarker({ 
+            start_date: date, 
+            css: "status_line", 
+            text: milestone.title, 
+            title: milestone.description});
         }
         var date_to_str = gantt.date.date_to_str(gantt.config.task_date);
         var today = new Date();

@@ -12,4 +12,8 @@ module.exports = {
   DUE_DATE_STRING: "#### 🗓 Expected Date:",
   LABEL_STRING: "#### 🏷 Label:",
   PROGRESS_STRING: "#### 📈 Progress (0-1):",
+  
+  // Configuration to use Realm Mobile Platform
+  RMP_ADMIN_TOKEN: "",
+  RMP_SYNC_URL: "", // realm://127.0.0.1:9080/github-gantt
 }

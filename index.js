@@ -93,16 +93,25 @@ const gh = new GitHub({
   token: config.GITHUB_API_TOKEN
 });
 
-let realm = new Realm({
-  path: 'tasks.realm',
-  schema: [TaskSchema, LabelSchema, MilestoneSchema],
-  schemaVersion: 1,
-  migration: function(oldRealm, newRealm) {
-    if (oldRealm.schemaVersion < 1) {
-      
-    }
-  }
-});
+var realm;
+
+if (config.RMP_ADMIN_TOKEN != "" &&
+    config.RMP_SYNC_URL != "") {
+      let adminUser = Realm.Sync.User.adminUser(config.RMP_ADMIN_TOKEN);
+      realm = new Realm({
+        sync: {
+          user: adminUser,
+          url: config.RMP_SYNC_URL,
+        },
+      schema: [TaskSchema, LabelSchema, MilestoneSchema],
+    });
+}
+else {
+  realm = new Realm({
+    path: 'tasks.realm',
+    schema: [TaskSchema, LabelSchema, MilestoneSchema],
+  });
+}
 
 let repo = gh.repos(config.GITHUB_ORG_NAME, config.GITHUB_REPO_NAME);
 
