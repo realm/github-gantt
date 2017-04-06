@@ -95,16 +95,19 @@ const gh = new GitHub({
 
 var realm;
 
-if (config.RMP_ADMIN_TOKEN != "" &&
-    config.RMP_SYNC_URL != "") {
-      let adminUser = Realm.Sync.User.adminUser(config.RMP_ADMIN_TOKEN);
-      realm = new Realm({
-        sync: {
-          user: adminUser,
-          url: config.RMP_SYNC_URL,
-        },
-      schema: [TaskSchema, LabelSchema, MilestoneSchema],
-    });
+if (config.RMP_ADMIN_TOKEN &&
+    config.RMP_SYNC_URL) {
+  if (config.RMP_ADMIN_TOKEN != "" &&
+      config.RMP_SYNC_URL != "") {
+        let adminUser = Realm.Sync.User.adminUser(config.RMP_ADMIN_TOKEN);
+        realm = new Realm({
+          sync: {
+            user: adminUser,
+            url: config.RMP_SYNC_URL,
+          },
+        schema: [TaskSchema, LabelSchema, MilestoneSchema],
+      });
+  }  
 }
 else {
   realm = new Realm({
@@ -195,7 +198,8 @@ function processIssues(issues, completion, idArray) {
       
       // find keywords
       if (issue.body != null) {
-        var lines = issue.body.split('\r\n')
+        var lines = issue.body.split(/[\r\n]+/);
+        
         for (var j = 0; j < lines.length; j++) {
           if (!lines[j].indexOf(config.START_DATE_STRING)) {
             let date = new Date(lines[j].replace(config.START_DATE_STRING, ''));

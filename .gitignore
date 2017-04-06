@@ -11,6 +11,10 @@ node_modules
 *.realm.management
 /realm-object-server
 /config/config.js
+/config/*.realm
+/config/*.realm.lock
+/config/*.realm.management
+/config/realm-object-server
 realm-professional.tgz
 
 # Ignore all logfiles and tempfiles.
