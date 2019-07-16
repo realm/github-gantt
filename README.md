@@ -13,6 +13,9 @@ is parsed for specific search strings to identify the start/end dates, which lab
 ## Setup
 First you will need to configure the server, run:
 ```
+// Give execution rights
+sudo chmod +x setup.sh
+
 // Mac
 sh ./setup.sh
 
